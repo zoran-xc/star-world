@@ -7,6 +7,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import top.xcyyds.starworld.common.StarWorldCommon;
 import top.xcyyds.starworld.common.nation.NationSavedData;
+import top.xcyyds.starworld.forge.debug.console.StarWorldConsole;
 
 @Mod.EventBusSubscriber(modid = StarWorldCommon.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class StarWorldNationForgeEvents {
@@ -22,6 +23,10 @@ public final class StarWorldNationForgeEvents {
             return;
         }
 
-        NationSavedData.getOrCreate(serverLevel);
+        long t0 = System.nanoTime();
+        NationSavedData data = NationSavedData.getOrCreate(serverLevel);
+        long ms = (System.nanoTime() - t0) / 1_000_000L;
+
+        StarWorldConsole.log(serverLevel, "NATION", "NationSavedData.getOrCreate done, nations=" + data.nations().size() + ", costMs=" + ms);
     }
 }
