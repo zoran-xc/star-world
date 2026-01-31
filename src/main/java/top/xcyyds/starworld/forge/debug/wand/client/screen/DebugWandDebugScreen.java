@@ -76,7 +76,7 @@ public class DebugWandDebugScreen extends Screen {
         for (DebugPage page : pages) {
             navList.addPage(page);
         }
-        addWidgetPublic(navList);
+        addRenderableWidgetPublic(navList);
 
         setActive(pages.get(0));
 

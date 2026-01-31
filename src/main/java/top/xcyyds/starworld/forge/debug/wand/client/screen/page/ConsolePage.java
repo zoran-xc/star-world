@@ -50,7 +50,7 @@ public final class ConsolePage implements DebugPage {
 
         list = new ConsoleList(Minecraft.getInstance(), right - left, bottom - top, top, bottom, 12);
         list.setLeftPos(left);
-        screen.addWidgetPublic(list);
+        screen.addRenderableWidgetPublic(list);
 
         refreshFromState();
         StarWorldNetwork.CHANNEL.sendToServer(new RequestConsoleSnapshotC2SPacket());
@@ -94,7 +94,7 @@ public final class ConsolePage implements DebugPage {
                 screen.removeWidgetPublic(list);
                 list = new ConsoleList(Minecraft.getInstance(), right - left, bottom - top, top, bottom, 12);
                 list.setLeftPos(left);
-                screen.addWidgetPublic(list);
+                screen.addRenderableWidgetPublic(list);
                 refreshFromState();
 
                 lastLeft = left;
