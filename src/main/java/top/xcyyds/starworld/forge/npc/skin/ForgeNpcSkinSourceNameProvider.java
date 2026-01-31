@@ -5,10 +5,12 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
 import net.minecraftforge.fml.loading.FMLPaths;
 import top.xcyyds.starworld.common.npc.skin.NpcSkinSourceNameProvider;
+import top.xcyyds.starworld.common.npc.skin.NpcSkinSourceUsedNamesSavedData;
 
 import javax.annotation.Nullable;
 import java.nio.charset.StandardCharsets;
@@ -56,7 +58,7 @@ public final class ForgeNpcSkinSourceNameProvider implements NpcSkinSourceNamePr
         if (!list.isEmpty()) {
             Set<String> banned = getBannedServerNamesLower(server);
             if (banned.isEmpty()) {
-                return list.get(random.nextInt(list.size()));
+                return pickUniqueFromConfig(random, server, list);
             }
 
             List<String> filtered = new ArrayList<>(list.size());
@@ -69,7 +71,54 @@ public final class ForgeNpcSkinSourceNameProvider implements NpcSkinSourceNamePr
                 }
             }
             if (!filtered.isEmpty()) {
-                return filtered.get(random.nextInt(filtered.size()));
+                return pickUniqueFromConfig(random, server, filtered);
+            }
+        }
+
+        return "";
+    }
+
+    private static String pickUniqueFromConfig(RandomSource random, @Nullable MinecraftServer server, List<String> candidates) {
+        if (candidates == null || candidates.isEmpty()) {
+            return "";
+        }
+
+        if (server == null) {
+            return candidates.get(random.nextInt(candidates.size()));
+        }
+
+        ServerLevel level;
+        try {
+            level = server.overworld();
+        } catch (Throwable t) {
+            level = null;
+        }
+        if (level == null) {
+            return candidates.get(random.nextInt(candidates.size()));
+        }
+
+        NpcSkinSourceUsedNamesSavedData data = NpcSkinSourceUsedNamesSavedData.getOrCreate(level);
+
+        List<String> pool = new ArrayList<>(candidates.size());
+        for (String name : candidates) {
+            if (name == null || name.isEmpty()) {
+                continue;
+            }
+            String lower = name.toLowerCase();
+            if (!data.isUsed(lower)) {
+                pool.add(name);
+            }
+        }
+        if (pool.isEmpty()) {
+            return "";
+        }
+
+        while (!pool.isEmpty()) {
+            int idx = random.nextInt(pool.size());
+            String picked = pool.remove(idx);
+            String lower = picked.toLowerCase();
+            if (data.markUsed(lower)) {
+                return picked;
             }
         }
 
