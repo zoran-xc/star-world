@@ -1,5 +1,6 @@
 {
   "mod.starworld.name": "starworld",
   "itemGroup.starworld": "starworld",
-  "item.starworld.debug_wand": "Debug Wand"
+  "item.starworld.debug_wand": "Debug Wand",
+  "item.starworld.player_npc_spawn_egg": "Player NPC Spawn Egg"
 }

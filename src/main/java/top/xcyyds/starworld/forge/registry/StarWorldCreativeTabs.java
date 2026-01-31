@@ -14,7 +14,10 @@ public final class StarWorldCreativeTabs {
     public static final RegistryObject<CreativeModeTab> STARWORLD_TAB = TABS.register("starworld", () -> CreativeModeTab.builder()
             .icon(() -> new ItemStack(StarWorldItems.DEBUG_WAND.get()))
             .title(Component.translatable("itemGroup.starworld"))
-            .displayItems((parameters, output) -> output.accept(StarWorldItems.DEBUG_WAND.get()))
+            .displayItems((parameters, output) -> {
+                output.accept(StarWorldItems.DEBUG_WAND.get());
+                output.accept(StarWorldItems.PLAYER_NPC_SPAWN_EGG.get());
+            })
             .build());
 
     private StarWorldCreativeTabs() {

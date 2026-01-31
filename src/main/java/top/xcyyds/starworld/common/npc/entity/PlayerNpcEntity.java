@@ -7,14 +7,19 @@ import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.PathfinderMob;
+import net.minecraft.world.entity.SpawnGroupData;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.ServerLevelAccessor;
 import top.xcyyds.starworld.common.name.BilingualName;
+import top.xcyyds.starworld.common.name.BilingualNameProvider;
 import top.xcyyds.starworld.common.npc.control.NpcControlApi;
 import top.xcyyds.starworld.common.npc.control.NpcControlState;
 import top.xcyyds.starworld.common.npc.hunger.NpcHunger;
@@ -22,6 +27,8 @@ import top.xcyyds.starworld.common.npc.inventory.NpcEquipmentInventory;
 import top.xcyyds.starworld.common.npc.inventory.NpcInventory;
 import top.xcyyds.starworld.common.npc.skin.OfficialSkinUtils;
 import top.xcyyds.starworld.common.npc.skin.NpcSkinData;
+
+import javax.annotation.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -50,6 +57,22 @@ public class PlayerNpcEntity extends PathfinderMob implements NpcControlApi {
         if (!level.isClientSide) {
             ensureProfileId();
         }
+    }
+
+    @Override
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor level, DifficultyInstance difficulty, MobSpawnType reason, @Nullable SpawnGroupData spawnData, @Nullable CompoundTag dataTag) {
+        SpawnGroupData data = super.finalizeSpawn(level, difficulty, reason, spawnData, dataTag);
+
+        if (!this.level().isClientSide && reason == MobSpawnType.SPAWN_EGG) {
+            if (getNpcNameZh().isEmpty() && getNpcNameEn().isEmpty()) {
+                setNpcName(BilingualNameProvider.get().generateNpcName(this.getRandom()));
+            }
+            if (getSkinSourceName().isEmpty()) {
+                setSkinSourceName(OfficialSkinUtils.randomNpcSkinSourceName(this.getRandom()));
+            }
+        }
+
+        return data;
     }
 
     @Override
