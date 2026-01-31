@@ -25,6 +25,7 @@ import top.xcyyds.starworld.common.npc.control.NpcControlState;
 import top.xcyyds.starworld.common.npc.hunger.NpcHunger;
 import top.xcyyds.starworld.common.npc.inventory.NpcEquipmentInventory;
 import top.xcyyds.starworld.common.npc.inventory.NpcInventory;
+import top.xcyyds.starworld.common.npc.skin.NpcSkinSourceNameProvider;
 import top.xcyyds.starworld.common.npc.skin.OfficialSkinUtils;
 import top.xcyyds.starworld.common.npc.skin.NpcSkinData;
 
@@ -69,7 +70,8 @@ public class PlayerNpcEntity extends PathfinderMob implements NpcControlApi {
                 setNpcName(BilingualNameProvider.get().generateNpcName(this.getRandom()));
             }
             if (getSkinSourceName().isEmpty()) {
-                setSkinSourceName(OfficialSkinUtils.randomNpcSkinSourceName(this.getRandom()));
+                MinecraftServer server = this.level().getServer();
+                setSkinSourceName(NpcSkinSourceNameProvider.get().pickSkinSourceName(this.getRandom(), server));
             }
         }
 
