@@ -6,6 +6,8 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import org.slf4j.Logger;
 import top.xcyyds.starworld.common.StarWorldCommon;
+import top.xcyyds.starworld.forge.npc.registry.StarWorldNpcAttributes;
+import top.xcyyds.starworld.forge.npc.registry.StarWorldNpcEntityTypes;
 import top.xcyyds.starworld.forge.registry.StarWorldCreativeTabs;
 import top.xcyyds.starworld.forge.registry.StarWorldItems;
 
@@ -19,6 +21,9 @@ public final class StarWorldForgeMod {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
         StarWorldItems.ITEMS.register(modEventBus);
         StarWorldCreativeTabs.TABS.register(modEventBus);
+        StarWorldNpcEntityTypes.ENTITY_TYPES.register(modEventBus);
+
+        modEventBus.addListener(StarWorldNpcAttributes::onEntityAttributeCreation);
 
         StarWorldCommon.init(new ForgePlatform(LOGGER));
     }
