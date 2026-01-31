@@ -2,6 +2,8 @@ package top.xcyyds.starworld.common.nation;
 
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
+import top.xcyyds.starworld.common.name.BilingualName;
+import top.xcyyds.starworld.common.name.BilingualNameProvider;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -48,9 +50,9 @@ public final class NationGenerator {
 
         double size = 12000.0 + random.nextDouble() * 18000.0;
         int color = randomColor(random);
-        String zhName = NationNameProvider.get().generateZhName(random);
+        BilingualName name = BilingualNameProvider.get().generateNationName(random);
 
-        return new Nation(id, x, z, color, zhName, "", size);
+        return new Nation(id, x, z, color, name.zh(), name.en(), size);
     }
 
     private static Nation createNeighborNation(RandomSource random, long worldSeed, int id, int index, int neighborCount, HashSet<Long> usedCapitals) {
@@ -75,9 +77,9 @@ public final class NationGenerator {
 
         double size = 7000.0 + random.nextDouble() * 12000.0;
         int color = randomColor(random);
-        String zhName = NationNameProvider.get().generateZhName(random);
+        BilingualName name = BilingualNameProvider.get().generateNationName(random);
 
-        return new Nation(id, x, z, color, zhName, "", size);
+        return new Nation(id, x, z, color, name.zh(), name.en(), size);
     }
 
     private static Nation createFarNation(RandomSource random, long worldSeed, int id, HashSet<Long> usedCapitals) {
@@ -101,9 +103,9 @@ public final class NationGenerator {
 
         double size = 18000.0 + random.nextDouble() * 45000.0;
         int color = randomColor(random);
-        String zhName = NationNameProvider.get().generateZhName(random);
+        BilingualName name = BilingualNameProvider.get().generateNationName(random);
 
-        return new Nation(id, x, z, color, zhName, "", size);
+        return new Nation(id, x, z, color, name.zh(), name.en(), size);
     }
 
     private static int randomColor(RandomSource random) {

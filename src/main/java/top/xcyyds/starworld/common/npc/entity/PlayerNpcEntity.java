@@ -14,6 +14,7 @@ import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
+import top.xcyyds.starworld.common.name.BilingualName;
 import top.xcyyds.starworld.common.npc.control.NpcControlApi;
 import top.xcyyds.starworld.common.npc.control.NpcControlState;
 import top.xcyyds.starworld.common.npc.hunger.NpcHunger;
@@ -32,6 +33,8 @@ public class PlayerNpcEntity extends PathfinderMob implements NpcControlApi {
     private static final EntityDataAccessor<String> DATA_SKIN_TEXTURES_VALUE = SynchedEntityData.defineId(PlayerNpcEntity.class, EntityDataSerializers.STRING);
     private static final EntityDataAccessor<String> DATA_SKIN_TEXTURES_SIGNATURE = SynchedEntityData.defineId(PlayerNpcEntity.class, EntityDataSerializers.STRING);
     private static final EntityDataAccessor<Boolean> DATA_SKIN_LOCKED = SynchedEntityData.defineId(PlayerNpcEntity.class, EntityDataSerializers.BOOLEAN);
+    private static final EntityDataAccessor<String> DATA_NAME_ZH = SynchedEntityData.defineId(PlayerNpcEntity.class, EntityDataSerializers.STRING);
+    private static final EntityDataAccessor<String> DATA_NAME_EN = SynchedEntityData.defineId(PlayerNpcEntity.class, EntityDataSerializers.STRING);
 
     private final NpcControlState controlState = new NpcControlState();
     private final NpcHunger hunger = new NpcHunger();
@@ -56,6 +59,8 @@ public class PlayerNpcEntity extends PathfinderMob implements NpcControlApi {
         this.entityData.define(DATA_SKIN_TEXTURES_VALUE, "");
         this.entityData.define(DATA_SKIN_TEXTURES_SIGNATURE, "");
         this.entityData.define(DATA_SKIN_LOCKED, false);
+        this.entityData.define(DATA_NAME_ZH, "");
+        this.entityData.define(DATA_NAME_EN, "");
     }
 
     public UUID getNpcProfileId() {
@@ -82,6 +87,24 @@ public class PlayerNpcEntity extends PathfinderMob implements NpcControlApi {
         }
         this.skinData.setSourceName(name);
         this.entityData.set(DATA_SKIN_SOURCE_NAME, name);
+    }
+
+    public String getNpcNameZh() {
+        return this.entityData.get(DATA_NAME_ZH);
+    }
+
+    public String getNpcNameEn() {
+        return this.entityData.get(DATA_NAME_EN);
+    }
+
+    public void setNpcName(BilingualName name) {
+        if (name == null) {
+            this.entityData.set(DATA_NAME_ZH, "");
+            this.entityData.set(DATA_NAME_EN, "");
+            return;
+        }
+        this.entityData.set(DATA_NAME_ZH, name.zh());
+        this.entityData.set(DATA_NAME_EN, name.en());
     }
 
     public boolean isSkinLocked() {
@@ -235,6 +258,9 @@ public class PlayerNpcEntity extends PathfinderMob implements NpcControlApi {
 
         tag.putUUID("npcProfileId", getNpcProfileId());
 
+        tag.putString("npcNameZh", getNpcNameZh());
+        tag.putString("npcNameEn", getNpcNameEn());
+
         CompoundTag hungerTag = new CompoundTag();
         hunger.save(hungerTag);
         tag.put("npcHunger", hungerTag);
@@ -260,6 +286,13 @@ public class PlayerNpcEntity extends PathfinderMob implements NpcControlApi {
             this.entityData.set(DATA_PROFILE_ID, Optional.of(tag.getUUID("npcProfileId")));
         } else {
             ensureProfileId();
+        }
+
+        if (tag.contains("npcNameZh")) {
+            this.entityData.set(DATA_NAME_ZH, tag.getString("npcNameZh"));
+        }
+        if (tag.contains("npcNameEn")) {
+            this.entityData.set(DATA_NAME_EN, tag.getString("npcNameEn"));
         }
 
         if (tag.contains("npcHunger")) {
