@@ -1,6 +1,8 @@
 package top.xcyyds.starworld.common.nation;
 
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.tags.BiomeTags;
 
 import java.util.List;
 
@@ -8,13 +10,27 @@ public final class NationQuery {
     private static final long WARP_SALT_X = 0x776172705F786C31L;
     private static final long WARP_SALT_Z = 0x776172705F7A6C32L;
     private static final long BUFFER_SALT = 0x6275666665725F31L;
+    private static final long WILD_SALT = 0x77696C646E657373L;
 
     private NationQuery() {
     }
 
     public static NationQueryResult query(ServerLevel level, int x, int z) {
         NationSavedData data = NationSavedData.getOrCreate(level);
-        return query(level.getSeed(), data.nations(), x, z);
+        NationQueryResult result = query(level.getSeed(), data.nations(), x, z);
+
+        if (result.borderBand() == NationBorderBand.OUTSIDE) {
+            return result;
+        }
+
+        if (isOcean(level, x, z)) {
+            int coastDist = approxDistanceToCoast(level, x, z, 512, 32);
+            if (coastDist > 500) {
+                return new NationQueryResult(result.nation(), NationBorderBand.OUTSIDE, result.borderDistanceBlocks(), result.bufferInnerStartBlocks(), result.bufferTotalBlocks());
+            }
+        }
+
+        return result;
     }
 
     public static NationQueryResult query(long worldSeed, List<Nation> nations, int x, int z) {
@@ -34,6 +50,11 @@ public final class NationQuery {
         Nation bestNation = null;
         double best = Double.POSITIVE_INFINITY;
         double second = Double.POSITIVE_INFINITY;
+
+        double maxSize = 1.0;
+        for (Nation nation : nations) {
+            maxSize = Math.max(maxSize, nation.size());
+        }
 
         for (Nation nation : nations) {
             double size = Math.max(1.0, nation.size());
@@ -63,6 +84,29 @@ public final class NationQuery {
         double margin = Math.max(0.0, second - best);
         double borderDistanceBlocks = (margin * Math.max(1.0, bestNation.size())) / 2.0;
 
+        boolean spawnProtected = (x * (long) x + z * (long) z) <= (2000L * 2000L);
+        if (!spawnProtected) {
+            boolean superPower = bestNation.size() >= maxSize * 0.999;
+
+            double baseReachFactor = superPower ? 2.2 : 0.95;
+            double wildness = noise01(mixSeed(worldSeed, WILD_SALT), x, z, 12000.0);
+
+            double reachFactor = baseReachFactor - wildness * 0.35;
+            if (best > reachFactor) {
+                int bufferTotal = bufferTotalBlocks(worldSeed, x, z);
+                int innerStart = Math.max(1, (int) Math.round(bufferTotal * 0.40));
+                return new NationQueryResult(bestNation, NationBorderBand.OUTSIDE, borderDistanceBlocks, innerStart, bufferTotal);
+            }
+
+            double wildernessChance = superPower ? 0.20 : 0.70;
+            double wRoll = noise01(mixSeed(worldSeed, WILD_SALT ^ 0x9E3779B97F4A7C15L), x, z, 5500.0);
+            if (wRoll < wildernessChance) {
+                int bufferTotal = bufferTotalBlocks(worldSeed, x, z);
+                int innerStart = Math.max(1, (int) Math.round(bufferTotal * 0.40));
+                return new NationQueryResult(bestNation, NationBorderBand.OUTSIDE, borderDistanceBlocks, innerStart, bufferTotal);
+            }
+        }
+
         int bufferTotal = bufferTotalBlocks(worldSeed, x, z);
         int innerStart = Math.max(1, (int) Math.round(bufferTotal * 0.40));
 
@@ -76,6 +120,60 @@ public final class NationQuery {
         }
 
         return new NationQueryResult(bestNation, band, borderDistanceBlocks, innerStart, bufferTotal);
+    }
+
+    @SuppressWarnings("null")
+    private static boolean isOcean(ServerLevel level, int x, int z) {
+        int seaLevel = level.getSeaLevel();
+        return level.getBiome(new BlockPos(x, seaLevel, z)).is(BiomeTags.IS_OCEAN);
+    }
+
+    @SuppressWarnings("null")
+    private static int approxDistanceToCoast(ServerLevel level, int x, int z, int maxRadius, int step) {
+        int seaLevel = level.getSeaLevel();
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+
+        int best = Integer.MAX_VALUE;
+        for (int r = 0; r <= maxRadius; r += step) {
+            if (best <= 500) {
+                return best;
+            }
+            if (r == 0) {
+                continue;
+            }
+
+            for (int dx = -r; dx <= r; dx += step) {
+                int dz1 = -r;
+                int dz2 = r;
+
+                pos.set(x + dx, seaLevel, z + dz1);
+                if (!level.getBiome(pos).is(BiomeTags.IS_OCEAN)) {
+                    best = Math.min(best, (int) Math.round(Math.sqrt(dx * (long) dx + dz1 * (long) dz1)));
+                }
+
+                pos.set(x + dx, seaLevel, z + dz2);
+                if (!level.getBiome(pos).is(BiomeTags.IS_OCEAN)) {
+                    best = Math.min(best, (int) Math.round(Math.sqrt(dx * (long) dx + dz2 * (long) dz2)));
+                }
+            }
+
+            for (int dz = -r; dz <= r; dz += step) {
+                int dx1 = -r;
+                int dx2 = r;
+
+                pos.set(x + dx1, seaLevel, z + dz);
+                if (!level.getBiome(pos).is(BiomeTags.IS_OCEAN)) {
+                    best = Math.min(best, (int) Math.round(Math.sqrt(dx1 * (long) dx1 + dz * (long) dz)));
+                }
+
+                pos.set(x + dx2, seaLevel, z + dz);
+                if (!level.getBiome(pos).is(BiomeTags.IS_OCEAN)) {
+                    best = Math.min(best, (int) Math.round(Math.sqrt(dx2 * (long) dx2 + dz * (long) dz)));
+                }
+            }
+        }
+
+        return best;
     }
 
     private static int bufferTotalBlocks(long worldSeed, int x, int z) {
