@@ -81,13 +81,15 @@ public final class ConsolePage implements DebugPage {
     }
 
     @Override
+    @SuppressWarnings("null")
     public void render(GuiGraphics graphics, int left, int top, int right, int bottom, int mouseX, int mouseY, float partialTick) {
         this.left = left;
         this.top = top;
         this.right = right;
         this.bottom = bottom;
 
-        graphics.drawString(Minecraft.getInstance().font, Component.literal("服务端存档级持久化日志（打开时同步快照）"), left, top - 10, 0xFFFFFF);
+        Component title = Component.literal("服务端存档级持久化日志（打开时同步快照）");
+        graphics.drawString(Minecraft.getInstance().font, title, left, top - 10, 0xFFFFFF);
 
         if (list != null) {
             if (lastLeft != left || lastTop != top || lastRight != right || lastBottom != bottom) {

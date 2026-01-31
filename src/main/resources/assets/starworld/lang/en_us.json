@@ -2,5 +2,13 @@
   "mod.starworld.name": "starworld",
   "itemGroup.starworld": "starworld",
   "item.starworld.debug_wand": "Debug Wand",
-  "item.starworld.player_npc_spawn_egg": "Player NPC Spawn Egg"
+  "item.starworld.player_npc_spawn_egg": "Player NPC Spawn Egg",
+
+  "gui.starworld.debug_wand.map.title": "Map",
+  "gui.starworld.debug_wand.map.recenter": "Recenter",
+  "gui.starworld.debug_wand.map.hover_coord": "Hover: (%s, %s)",
+  "gui.starworld.debug_wand.map.tooltip.coord": "Pos: (%s, %s)",
+  "gui.starworld.debug_wand.map.tooltip.chunk": "Chunk: %s",
+  "gui.starworld.debug_wand.map.tooltip.block": "Top Block: %s",
+  "gui.starworld.debug_wand.map.unloaded": "Unloaded"
 }

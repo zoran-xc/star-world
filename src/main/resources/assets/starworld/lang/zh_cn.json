@@ -2,5 +2,13 @@
   "mod.starworld.name": "starworld",
   "itemGroup.starworld": "starworld",
   "item.starworld.debug_wand": "调试棒",
-  "item.starworld.player_npc_spawn_egg": "NPC 刷怪蛋"
+  "item.starworld.player_npc_spawn_egg": "NPC 刷怪蛋",
+
+  "gui.starworld.debug_wand.map.title": "地图",
+  "gui.starworld.debug_wand.map.recenter": "回到玩家",
+  "gui.starworld.debug_wand.map.hover_coord": "指向: (%s, %s)",
+  "gui.starworld.debug_wand.map.tooltip.coord": "坐标: (%s, %s)",
+  "gui.starworld.debug_wand.map.tooltip.chunk": "区块: %s",
+  "gui.starworld.debug_wand.map.tooltip.block": "顶部方块: %s",
+  "gui.starworld.debug_wand.map.unloaded": "未加载"
 }
