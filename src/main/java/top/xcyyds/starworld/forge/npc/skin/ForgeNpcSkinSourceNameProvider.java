@@ -5,31 +5,41 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
 import net.minecraftforge.fml.loading.FMLPaths;
 import top.xcyyds.starworld.common.npc.skin.NpcSkinSourceNameProvider;
-import top.xcyyds.starworld.common.npc.skin.OfficialSkinUtils;
 
 import javax.annotation.Nullable;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 public final class ForgeNpcSkinSourceNameProvider implements NpcSkinSourceNameProvider {
     private static final String CONFIG_DIR_NAME = "starworld";
     private static final String FILE_NAME = "npc_skin_sources.txt";
+
+    private static final String[] BANNED_DEFAULT_NAMES = new String[]{
+            "Notch",
+            "jeb_",
+            "Dinnerbone",
+            "Grumm",
+            "Searge"
+    };
 
     private final Path configFile;
 
     private volatile List<String> cachedNames = List.of();
     private volatile long cachedLastModified = -1L;
 
-    private volatile List<String> cachedServerNames = List.of();
-    private volatile long cachedServerUserCacheModified = -1L;
-    private volatile long cachedServerWhitelistModified = -1L;
+    private volatile Set<String> cachedBannedServerNamesLower = Set.of();
+    private volatile long cachedBannedUserCacheModified = -1L;
+    private volatile long cachedBannedWhitelistModified = -1L;
 
     public ForgeNpcSkinSourceNameProvider() {
         this.configFile = FMLPaths.CONFIGDIR.get().resolve(CONFIG_DIR_NAME).resolve(FILE_NAME);
@@ -42,16 +52,28 @@ public final class ForgeNpcSkinSourceNameProvider implements NpcSkinSourceNamePr
             random = RandomSource.create();
         }
 
-        LinkedHashSet<String> combined = new LinkedHashSet<>();
-        combined.addAll(getConfigNames());
-        combined.addAll(getServerNames(server));
+        List<String> list = getConfigNames();
+        if (!list.isEmpty()) {
+            Set<String> banned = getBannedServerNamesLower(server);
+            if (banned.isEmpty()) {
+                return list.get(random.nextInt(list.size()));
+            }
 
-        if (!combined.isEmpty()) {
-            List<String> list = new ArrayList<>(combined);
-            return list.get(random.nextInt(list.size()));
+            List<String> filtered = new ArrayList<>(list.size());
+            for (String name : list) {
+                if (name == null || name.isEmpty()) {
+                    continue;
+                }
+                if (!banned.contains(name.toLowerCase())) {
+                    filtered.add(name);
+                }
+            }
+            if (!filtered.isEmpty()) {
+                return filtered.get(random.nextInt(filtered.size()));
+            }
         }
 
-        return OfficialSkinUtils.randomNpcSkinSourceName(random);
+        return "";
     }
 
     private List<String> getConfigNames() {
@@ -84,12 +106,27 @@ public final class ForgeNpcSkinSourceNameProvider implements NpcSkinSourceNamePr
                 if (s.isEmpty()) {
                     continue;
                 }
+                if (isBannedDefaultName(s)) {
+                    continue;
+                }
                 set.add(s);
             }
             return new ArrayList<>(set);
         } catch (Throwable t) {
             return List.of();
         }
+    }
+
+    private static boolean isBannedDefaultName(String name) {
+        if (name == null || name.isEmpty()) {
+            return false;
+        }
+        for (String banned : BANNED_DEFAULT_NAMES) {
+            if (banned != null && banned.equalsIgnoreCase(name)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void ensureConfigFileExists() {
@@ -101,21 +138,14 @@ public final class ForgeNpcSkinSourceNameProvider implements NpcSkinSourceNamePr
             if (Files.exists(configFile)) {
                 return;
             }
-            List<String> defaults = List.of(
-                    "Notch",
-                    "jeb_",
-                    "Dinnerbone",
-                    "Grumm",
-                    "Searge"
-            );
-            Files.write(configFile, defaults, StandardCharsets.UTF_8);
+            Files.createFile(configFile);
         } catch (Throwable t) {
         }
     }
 
-    private List<String> getServerNames(@Nullable MinecraftServer server) {
+    private Set<String> getBannedServerNamesLower(@Nullable MinecraftServer server) {
         if (server == null) {
-            return List.of();
+            return Set.of();
         }
 
         Path usercacheFile = null;
@@ -134,21 +164,33 @@ public final class ForgeNpcSkinSourceNameProvider implements NpcSkinSourceNamePr
         long usercacheModified = getLastModified(usercacheFile);
         long whitelistModified = getLastModified(whitelistFile);
 
-        if (usercacheModified == cachedServerUserCacheModified
-                && whitelistModified == cachedServerWhitelistModified
-                && !cachedServerNames.isEmpty()) {
-            return cachedServerNames;
+        if (usercacheModified == cachedBannedUserCacheModified
+                && whitelistModified == cachedBannedWhitelistModified) {
+            return cachedBannedServerNamesLower;
         }
 
-        LinkedHashSet<String> set = new LinkedHashSet<>();
-        set.addAll(readNamesFromUserCache(usercacheFile));
-        set.addAll(readNamesFromWhitelist(whitelistFile));
+        Set<String> set = new HashSet<>();
+        for (String name : readNamesFromJsonFile(usercacheFile)) {
+            set.add(name.toLowerCase());
+        }
+        for (String name : readNamesFromJsonFile(whitelistFile)) {
+            set.add(name.toLowerCase());
+        }
 
-        List<String> result = new ArrayList<>(set);
-        cachedServerNames = result;
-        cachedServerUserCacheModified = usercacheModified;
-        cachedServerWhitelistModified = whitelistModified;
-        return result;
+        try {
+            for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+                String name = player.getGameProfile().getName();
+                if (name != null && !name.isEmpty()) {
+                    set.add(name.toLowerCase());
+                }
+            }
+        } catch (Throwable t) {
+        }
+
+        cachedBannedServerNamesLower = Set.copyOf(set);
+        cachedBannedUserCacheModified = usercacheModified;
+        cachedBannedWhitelistModified = whitelistModified;
+        return cachedBannedServerNamesLower;
     }
 
     private static long getLastModified(@Nullable Path file) {
@@ -162,42 +204,7 @@ public final class ForgeNpcSkinSourceNameProvider implements NpcSkinSourceNamePr
         }
     }
 
-    private static List<String> readNamesFromUserCache(@Nullable Path file) {
-        if (file == null || !Files.exists(file)) {
-            return List.of();
-        }
-
-        try {
-            String json = Files.readString(file, StandardCharsets.UTF_8);
-            JsonElement root = JsonParser.parseString(json);
-            if (root == null || !root.isJsonArray()) {
-                return List.of();
-            }
-            JsonArray arr = root.getAsJsonArray();
-            LinkedHashSet<String> set = new LinkedHashSet<>();
-            for (JsonElement e : arr) {
-                if (e == null || !e.isJsonObject()) {
-                    continue;
-                }
-                JsonObject obj = e.getAsJsonObject();
-                JsonElement nameEl = obj.get("name");
-                if (nameEl != null && nameEl.isJsonPrimitive()) {
-                    String name = nameEl.getAsString();
-                    if (name != null) {
-                        name = name.trim();
-                        if (!name.isEmpty()) {
-                            set.add(name);
-                        }
-                    }
-                }
-            }
-            return new ArrayList<>(set);
-        } catch (Throwable t) {
-            return List.of();
-        }
-    }
-
-    private static List<String> readNamesFromWhitelist(@Nullable Path file) {
+    private static List<String> readNamesFromJsonFile(@Nullable Path file) {
         if (file == null || !Files.exists(file)) {
             return List.of();
         }

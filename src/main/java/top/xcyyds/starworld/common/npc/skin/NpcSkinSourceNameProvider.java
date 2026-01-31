@@ -25,7 +25,7 @@ public interface NpcSkinSourceNameProvider {
     final class DefaultNpcSkinSourceNameProvider implements NpcSkinSourceNameProvider {
         @Override
         public String pickSkinSourceName(RandomSource random, @Nullable MinecraftServer server) {
-            return OfficialSkinUtils.randomNpcSkinSourceName(random);
+            return "";
         }
     }
 }

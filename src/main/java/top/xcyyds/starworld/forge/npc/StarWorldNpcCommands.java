@@ -11,6 +11,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.phys.Vec3;
 import top.xcyyds.starworld.common.name.BilingualNameProvider;
+import top.xcyyds.starworld.common.npc.skin.NpcSkinSourceNameProvider;
 import top.xcyyds.starworld.common.npc.skin.OfficialSkinUtils;
 import top.xcyyds.starworld.forge.command.CommandContributor;
 import top.xcyyds.starworld.forge.npc.entity.ForgePlayerNpcEntity;
@@ -67,7 +68,10 @@ public final class StarWorldNpcCommands implements CommandContributor {
         if (playerName.isPresent()) {
             npc.setSkinSourceName(playerName.get());
         } else if (uuid.isEmpty()) {
-            npc.setSkinSourceName(OfficialSkinUtils.randomNpcSkinSourceName(level.getRandom()));
+            String sourceName = NpcSkinSourceNameProvider.get().pickSkinSourceName(level.getRandom(), level.getServer());
+            if (sourceName != null && !sourceName.isEmpty()) {
+                npc.setSkinSourceName(sourceName);
+            }
         }
 
         Vec3 pos = source.getPosition();

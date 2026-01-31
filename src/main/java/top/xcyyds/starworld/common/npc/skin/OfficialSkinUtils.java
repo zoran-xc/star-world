@@ -3,7 +3,6 @@ package top.xcyyds.starworld.common.npc.skin;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.RandomSource;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -15,14 +14,6 @@ import java.util.Base64;
 import java.nio.charset.StandardCharsets;
 
 public final class OfficialSkinUtils {
-    private static final String[] DEFAULT_NPC_SKIN_SOURCES = new String[]{
-            "Notch",
-            "jeb_",
-            "Dinnerbone",
-            "Grumm",
-            "Searge"
-    };
-
     private OfficialSkinUtils() {
     }
 
@@ -51,13 +42,6 @@ public final class OfficialSkinUtils {
 
         GameProfile filled = server.getSessionService().fillProfileProperties(new GameProfile(uuid, ""), true);
         return filled.getProperties().get("textures").stream().findFirst();
-    }
-
-    public static String randomNpcSkinSourceName(RandomSource random) {
-        if (random == null) {
-            random = RandomSource.create();
-        }
-        return DEFAULT_NPC_SKIN_SOURCES[random.nextInt(DEFAULT_NPC_SKIN_SOURCES.length)];
     }
 
     public static boolean isSlimSkinTexturesValue(String texturesValue) {

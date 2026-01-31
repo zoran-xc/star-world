@@ -71,7 +71,10 @@ public class PlayerNpcEntity extends PathfinderMob implements NpcControlApi {
             }
             if (getSkinSourceName().isEmpty()) {
                 MinecraftServer server = this.level().getServer();
-                setSkinSourceName(NpcSkinSourceNameProvider.get().pickSkinSourceName(this.getRandom(), server));
+                String sourceName = NpcSkinSourceNameProvider.get().pickSkinSourceName(this.getRandom(), server);
+                if (sourceName != null && !sourceName.isEmpty()) {
+                    setSkinSourceName(sourceName);
+                }
             }
         }
 
