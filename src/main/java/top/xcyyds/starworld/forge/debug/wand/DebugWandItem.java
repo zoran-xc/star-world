@@ -3,6 +3,7 @@ package top.xcyyds.starworld.forge.debug.wand;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -10,10 +11,35 @@ import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.DistExecutor;
+import top.xcyyds.starworld.common.npc.entity.PlayerNpcEntity;
 
 public class DebugWandItem extends Item {
     public DebugWandItem(Properties properties) {
         super(properties);
+    }
+
+    @Override
+    public InteractionResult interactLivingEntity(ItemStack stack, Player player, LivingEntity target, InteractionHand usedHand) {
+        if (target instanceof PlayerNpcEntity npc) {
+            Level level = player.level();
+            if (!level.isClientSide) {
+                String zh = npc.getNpcNameZh();
+                String en = npc.getNpcNameEn();
+                String skin = npc.getSkinSourceName();
+                boolean locked = npc.isSkinLocked();
+
+                player.sendSystemMessage(net.minecraft.network.chat.Component.literal(
+                        "[StarWorld] NPC\n" +
+                                "- nameZh: " + (zh == null || zh.isEmpty() ? "<empty>" : zh) + "\n" +
+                                "- nameEn: " + (en == null || en.isEmpty() ? "<empty>" : en) + "\n" +
+                                "- skin: " + (skin == null || skin.isEmpty() ? "<empty>" : skin) + (locked ? " (locked)" : " (pending)") + "\n" +
+                                "- profileId: " + npc.getNpcProfileId()
+                ));
+            }
+            return InteractionResult.sidedSuccess(level.isClientSide);
+        }
+
+        return super.interactLivingEntity(stack, player, target, usedHand);
     }
 
     @Override
