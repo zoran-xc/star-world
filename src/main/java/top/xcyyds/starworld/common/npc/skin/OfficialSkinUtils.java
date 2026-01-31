@@ -5,8 +5,14 @@ import com.mojang.authlib.properties.Property;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.RandomSource;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
 import java.util.Optional;
 import java.util.UUID;
+import java.util.Base64;
+import java.nio.charset.StandardCharsets;
 
 public final class OfficialSkinUtils {
     private static final String[] DEFAULT_NPC_SKIN_SOURCES = new String[]{
@@ -52,5 +58,40 @@ public final class OfficialSkinUtils {
             random = RandomSource.create();
         }
         return DEFAULT_NPC_SKIN_SOURCES[random.nextInt(DEFAULT_NPC_SKIN_SOURCES.length)];
+    }
+
+    public static boolean isSlimSkinTexturesValue(String texturesValue) {
+        if (texturesValue == null || texturesValue.isEmpty()) {
+            return false;
+        }
+        try {
+            byte[] decoded = Base64.getDecoder().decode(texturesValue);
+            String json = new String(decoded, StandardCharsets.UTF_8);
+            JsonElement root = JsonParser.parseString(json);
+            if (root == null || !root.isJsonObject()) {
+                return false;
+            }
+
+            JsonObject rootObj = root.getAsJsonObject();
+            JsonObject textures = rootObj.getAsJsonObject("textures");
+            if (textures == null) {
+                return false;
+            }
+
+            JsonObject skin = textures.getAsJsonObject("SKIN");
+            if (skin == null) {
+                return false;
+            }
+
+            JsonObject meta = skin.getAsJsonObject("metadata");
+            if (meta == null) {
+                return false;
+            }
+
+            JsonElement model = meta.get("model");
+            return model != null && model.isJsonPrimitive() && "slim".equalsIgnoreCase(model.getAsString());
+        } catch (Throwable t) {
+            return false;
+        }
     }
 }

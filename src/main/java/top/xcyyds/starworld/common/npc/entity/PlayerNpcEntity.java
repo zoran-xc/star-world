@@ -41,6 +41,7 @@ public class PlayerNpcEntity extends PathfinderMob implements NpcControlApi {
     private static final EntityDataAccessor<String> DATA_SKIN_TEXTURES_VALUE = SynchedEntityData.defineId(PlayerNpcEntity.class, EntityDataSerializers.STRING);
     private static final EntityDataAccessor<String> DATA_SKIN_TEXTURES_SIGNATURE = SynchedEntityData.defineId(PlayerNpcEntity.class, EntityDataSerializers.STRING);
     private static final EntityDataAccessor<Boolean> DATA_SKIN_LOCKED = SynchedEntityData.defineId(PlayerNpcEntity.class, EntityDataSerializers.BOOLEAN);
+    private static final EntityDataAccessor<Boolean> DATA_SKIN_SLIM = SynchedEntityData.defineId(PlayerNpcEntity.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<String> DATA_NAME_ZH = SynchedEntityData.defineId(PlayerNpcEntity.class, EntityDataSerializers.STRING);
     private static final EntityDataAccessor<String> DATA_NAME_EN = SynchedEntityData.defineId(PlayerNpcEntity.class, EntityDataSerializers.STRING);
 
@@ -83,6 +84,7 @@ public class PlayerNpcEntity extends PathfinderMob implements NpcControlApi {
         this.entityData.define(DATA_SKIN_TEXTURES_VALUE, "");
         this.entityData.define(DATA_SKIN_TEXTURES_SIGNATURE, "");
         this.entityData.define(DATA_SKIN_LOCKED, false);
+        this.entityData.define(DATA_SKIN_SLIM, false);
         this.entityData.define(DATA_NAME_ZH, "");
         this.entityData.define(DATA_NAME_EN, "");
     }
@@ -141,6 +143,14 @@ public class PlayerNpcEntity extends PathfinderMob implements NpcControlApi {
 
     public String getSkinTexturesSignature() {
         return this.entityData.get(DATA_SKIN_TEXTURES_SIGNATURE);
+    }
+
+    public boolean isSkinSlim() {
+        return this.entityData.get(DATA_SKIN_SLIM);
+    }
+
+    public void lockSkinWithTextures(String value, String signature) {
+        lockSkinOnce(value, signature);
     }
 
     public GameProfile buildRenderGameProfile() {
@@ -266,6 +276,7 @@ public class PlayerNpcEntity extends PathfinderMob implements NpcControlApi {
         this.entityData.set(DATA_SKIN_TEXTURES_VALUE, skinData.getTexturesValue());
         this.entityData.set(DATA_SKIN_TEXTURES_SIGNATURE, skinData.getTexturesSignature());
         this.entityData.set(DATA_SKIN_LOCKED, skinData.isLocked());
+        this.entityData.set(DATA_SKIN_SLIM, OfficialSkinUtils.isSlimSkinTexturesValue(skinData.getTexturesValue()));
     }
 
     @Override
@@ -329,6 +340,7 @@ public class PlayerNpcEntity extends PathfinderMob implements NpcControlApi {
             this.entityData.set(DATA_SKIN_TEXTURES_VALUE, skinData.getTexturesValue());
             this.entityData.set(DATA_SKIN_TEXTURES_SIGNATURE, skinData.getTexturesSignature());
             this.entityData.set(DATA_SKIN_LOCKED, skinData.isLocked());
+            this.entityData.set(DATA_SKIN_SLIM, OfficialSkinUtils.isSlimSkinTexturesValue(skinData.getTexturesValue()));
         }
     }
 
