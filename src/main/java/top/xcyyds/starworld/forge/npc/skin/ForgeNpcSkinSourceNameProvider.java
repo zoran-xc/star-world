@@ -1,5 +1,9 @@
 package top.xcyyds.starworld.forge.npc.skin;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.RandomSource;
 import net.minecraftforge.fml.loading.FMLPaths;
@@ -23,6 +27,10 @@ public final class ForgeNpcSkinSourceNameProvider implements NpcSkinSourceNamePr
     private volatile List<String> cachedNames = List.of();
     private volatile long cachedLastModified = -1L;
 
+    private volatile List<String> cachedServerNames = List.of();
+    private volatile long cachedServerUserCacheModified = -1L;
+    private volatile long cachedServerWhitelistModified = -1L;
+
     public ForgeNpcSkinSourceNameProvider() {
         this.configFile = FMLPaths.CONFIGDIR.get().resolve(CONFIG_DIR_NAME).resolve(FILE_NAME);
         ensureConfigFileExists();
@@ -30,10 +38,19 @@ public final class ForgeNpcSkinSourceNameProvider implements NpcSkinSourceNamePr
 
     @Override
     public String pickSkinSourceName(RandomSource random, @Nullable MinecraftServer server) {
-        List<String> list = getConfigNames();
-        if (!list.isEmpty()) {
+        if (random == null) {
+            random = RandomSource.create();
+        }
+
+        LinkedHashSet<String> combined = new LinkedHashSet<>();
+        combined.addAll(getConfigNames());
+        combined.addAll(getServerNames(server));
+
+        if (!combined.isEmpty()) {
+            List<String> list = new ArrayList<>(combined);
             return list.get(random.nextInt(list.size()));
         }
+
         return OfficialSkinUtils.randomNpcSkinSourceName(random);
     }
 
@@ -93,6 +110,125 @@ public final class ForgeNpcSkinSourceNameProvider implements NpcSkinSourceNamePr
             );
             Files.write(configFile, defaults, StandardCharsets.UTF_8);
         } catch (Throwable t) {
+        }
+    }
+
+    private List<String> getServerNames(@Nullable MinecraftServer server) {
+        if (server == null) {
+            return List.of();
+        }
+
+        Path usercacheFile = null;
+        Path whitelistFile = null;
+
+        try {
+            usercacheFile = server.getFile("usercache.json").toPath();
+        } catch (Throwable t) {
+        }
+
+        try {
+            whitelistFile = server.getFile("whitelist.json").toPath();
+        } catch (Throwable t) {
+        }
+
+        long usercacheModified = getLastModified(usercacheFile);
+        long whitelistModified = getLastModified(whitelistFile);
+
+        if (usercacheModified == cachedServerUserCacheModified
+                && whitelistModified == cachedServerWhitelistModified
+                && !cachedServerNames.isEmpty()) {
+            return cachedServerNames;
+        }
+
+        LinkedHashSet<String> set = new LinkedHashSet<>();
+        set.addAll(readNamesFromUserCache(usercacheFile));
+        set.addAll(readNamesFromWhitelist(whitelistFile));
+
+        List<String> result = new ArrayList<>(set);
+        cachedServerNames = result;
+        cachedServerUserCacheModified = usercacheModified;
+        cachedServerWhitelistModified = whitelistModified;
+        return result;
+    }
+
+    private static long getLastModified(@Nullable Path file) {
+        try {
+            if (file == null || !Files.exists(file)) {
+                return -1L;
+            }
+            return Files.getLastModifiedTime(file).toMillis();
+        } catch (Throwable t) {
+            return -1L;
+        }
+    }
+
+    private static List<String> readNamesFromUserCache(@Nullable Path file) {
+        if (file == null || !Files.exists(file)) {
+            return List.of();
+        }
+
+        try {
+            String json = Files.readString(file, StandardCharsets.UTF_8);
+            JsonElement root = JsonParser.parseString(json);
+            if (root == null || !root.isJsonArray()) {
+                return List.of();
+            }
+            JsonArray arr = root.getAsJsonArray();
+            LinkedHashSet<String> set = new LinkedHashSet<>();
+            for (JsonElement e : arr) {
+                if (e == null || !e.isJsonObject()) {
+                    continue;
+                }
+                JsonObject obj = e.getAsJsonObject();
+                JsonElement nameEl = obj.get("name");
+                if (nameEl != null && nameEl.isJsonPrimitive()) {
+                    String name = nameEl.getAsString();
+                    if (name != null) {
+                        name = name.trim();
+                        if (!name.isEmpty()) {
+                            set.add(name);
+                        }
+                    }
+                }
+            }
+            return new ArrayList<>(set);
+        } catch (Throwable t) {
+            return List.of();
+        }
+    }
+
+    private static List<String> readNamesFromWhitelist(@Nullable Path file) {
+        if (file == null || !Files.exists(file)) {
+            return List.of();
+        }
+
+        try {
+            String json = Files.readString(file, StandardCharsets.UTF_8);
+            JsonElement root = JsonParser.parseString(json);
+            if (root == null || !root.isJsonArray()) {
+                return List.of();
+            }
+            JsonArray arr = root.getAsJsonArray();
+            LinkedHashSet<String> set = new LinkedHashSet<>();
+            for (JsonElement e : arr) {
+                if (e == null || !e.isJsonObject()) {
+                    continue;
+                }
+                JsonObject obj = e.getAsJsonObject();
+                JsonElement nameEl = obj.get("name");
+                if (nameEl != null && nameEl.isJsonPrimitive()) {
+                    String name = nameEl.getAsString();
+                    if (name != null) {
+                        name = name.trim();
+                        if (!name.isEmpty()) {
+                            set.add(name);
+                        }
+                    }
+                }
+            }
+            return new ArrayList<>(set);
+        } catch (Throwable t) {
+            return List.of();
         }
     }
 }
