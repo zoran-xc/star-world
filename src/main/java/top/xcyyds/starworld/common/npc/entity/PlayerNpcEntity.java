@@ -20,6 +20,7 @@ import top.xcyyds.starworld.common.npc.control.NpcControlState;
 import top.xcyyds.starworld.common.npc.hunger.NpcHunger;
 import top.xcyyds.starworld.common.npc.inventory.NpcEquipmentInventory;
 import top.xcyyds.starworld.common.npc.inventory.NpcInventory;
+import top.xcyyds.starworld.common.npc.skin.OfficialSkinUtils;
 import top.xcyyds.starworld.common.npc.skin.NpcSkinData;
 
 import java.util.ArrayList;
@@ -222,19 +223,11 @@ public class PlayerNpcEntity extends PathfinderMob implements NpcControlApi {
         }
 
         try {
-            Optional<GameProfile> cached = server.getProfileCache().get(sourceName);
-            if (cached.isEmpty()) {
-                skinFetchCooldownTicks = 200;
-                return;
-            }
-
-            GameProfile filled = server.getSessionService().fillProfileProperties(cached.get(), true);
-            Property textures = filled.getProperties().get("textures").stream().findFirst().orElse(null);
+            Property textures = OfficialSkinUtils.fetchTexturesByPlayerName(server, sourceName).orElse(null);
             if (textures == null) {
                 skinFetchCooldownTicks = 200;
                 return;
             }
-
             lockSkinOnce(textures.getValue(), textures.getSignature());
         } catch (Throwable t) {
             skinFetchCooldownTicks = 200;
