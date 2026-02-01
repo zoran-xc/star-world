@@ -5,7 +5,9 @@ import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.simple.SimpleChannel;
 import top.xcyyds.starworld.common.StarWorldCommon;
 import top.xcyyds.starworld.forge.network.packet.ConsoleSnapshotS2CPacket;
+import top.xcyyds.starworld.forge.network.packet.NationOverlayS2CPacket;
 import top.xcyyds.starworld.forge.network.packet.RequestConsoleSnapshotC2SPacket;
+import top.xcyyds.starworld.forge.network.packet.RequestNationOverlayC2SPacket;
 import top.xcyyds.starworld.forge.network.packet.UpdateDebugWandOptionsC2SPacket;
 
 public final class StarWorldNetwork {
@@ -27,5 +29,7 @@ public final class StarWorldNetwork {
         CHANNEL.registerMessage(id++, UpdateDebugWandOptionsC2SPacket.class, UpdateDebugWandOptionsC2SPacket::encode, UpdateDebugWandOptionsC2SPacket::decode, UpdateDebugWandOptionsC2SPacket::handle);
         CHANNEL.registerMessage(id++, RequestConsoleSnapshotC2SPacket.class, RequestConsoleSnapshotC2SPacket::encode, RequestConsoleSnapshotC2SPacket::decode, RequestConsoleSnapshotC2SPacket::handle);
         CHANNEL.registerMessage(id++, ConsoleSnapshotS2CPacket.class, ConsoleSnapshotS2CPacket::encode, ConsoleSnapshotS2CPacket::decode, ConsoleSnapshotS2CPacket::handle);
+        CHANNEL.registerMessage(id++, RequestNationOverlayC2SPacket.class, RequestNationOverlayC2SPacket::encode, RequestNationOverlayC2SPacket::decode, RequestNationOverlayC2SPacket::handle);
+        CHANNEL.registerMessage(id++, NationOverlayS2CPacket.class, NationOverlayS2CPacket::encode, NationOverlayS2CPacket::decode, NationOverlayS2CPacket::handle);
     }
 }

@@ -11,6 +11,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkStatus;
@@ -23,7 +24,12 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.loading.FMLPaths;
 import org.lwjgl.glfw.GLFW;
 import top.xcyyds.starworld.common.StarWorldCommon;
+import top.xcyyds.starworld.forge.debug.wand.DebugWandItem;
+import top.xcyyds.starworld.forge.debug.wand.DebugWandOptions;
 import top.xcyyds.starworld.forge.debug.wand.client.screen.DebugWandDebugScreen;
+import top.xcyyds.starworld.forge.nation.client.StarWorldClientNationOverlayState;
+import top.xcyyds.starworld.forge.network.StarWorldNetwork;
+import top.xcyyds.starworld.forge.network.packet.RequestNationOverlayC2SPacket;
 
 import com.mojang.blaze3d.platform.NativeImage;
 
@@ -87,6 +93,113 @@ public final class MapPage implements DebugPage {
 
     public MapPage(DebugWandDebugScreen screen) {
         this.screen = screen;
+    }
+
+    private boolean shouldShowNationArea() {
+        Player player = Minecraft.getInstance().player;
+        if (player == null) {
+            return false;
+        }
+        ItemStack main = player.getMainHandItem();
+        if (main.getItem() instanceof DebugWandItem) {
+            DebugWandOptions opt = DebugWandOptions.get(main);
+            if (opt.enableMainHand && opt.showNationArea) {
+                return true;
+            }
+        }
+        ItemStack off = player.getOffhandItem();
+        if (off.getItem() instanceof DebugWandItem) {
+            DebugWandOptions opt = DebugWandOptions.get(off);
+            if (opt.enableOffHand && opt.showNationArea) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void drawNationOverlay(GuiGraphics graphics, int bpp, double renderCenterX, double renderCenterZ) {
+        ClientLevel level = Minecraft.getInstance().level;
+        if (level == null) {
+            return;
+        }
+        StarWorldClientNationOverlayState.Snapshot snapshot = StarWorldClientNationOverlayState.getSnapshot();
+        if (snapshot == null) {
+            return;
+        }
+        String dimId = level.dimension().location().toString();
+        if (!snapshot.dimId().equals(dimId)) {
+            return;
+        }
+
+        double worldMinX = renderCenterX - (mapW / 2.0) * bpp;
+        double worldMinZ = renderCenterZ - (mapH / 2.0) * bpp;
+
+        int lineColor = 0xCCFFFFFF;
+        for (StarWorldClientNationOverlayState.Segment s : snapshot.segments()) {
+            int sx0 = (int) Math.round(mapLeft + (s.x0() - worldMinX) / (double) bpp);
+            int sy0 = (int) Math.round(mapTop + (s.z0() - worldMinZ) / (double) bpp);
+            int sx1 = (int) Math.round(mapLeft + (s.x1() - worldMinX) / (double) bpp);
+            int sy1 = (int) Math.round(mapTop + (s.z1() - worldMinZ) / (double) bpp);
+
+            if (sx0 == sx1) {
+                int x = sx0;
+                int y0 = Math.min(sy0, sy1);
+                int y1 = Math.max(sy0, sy1);
+                if (x < mapLeft || x >= mapRight) {
+                    continue;
+                }
+                if (y1 < mapTop || y0 >= mapBottom) {
+                    continue;
+                }
+                y0 = Math.max(y0, mapTop);
+                y1 = Math.min(y1, mapBottom);
+                graphics.fill(x, y0, x + 1, y1, lineColor);
+            } else if (sy0 == sy1) {
+                int y = sy0;
+                int x0 = Math.min(sx0, sx1);
+                int x1 = Math.max(sx0, sx1);
+                if (y < mapTop || y >= mapBottom) {
+                    continue;
+                }
+                if (x1 < mapLeft || x0 >= mapRight) {
+                    continue;
+                }
+                x0 = Math.max(x0, mapLeft);
+                x1 = Math.min(x1, mapRight);
+                graphics.fill(x0, y, x1, y + 1, lineColor);
+            }
+        }
+
+        var font = Minecraft.getInstance().font;
+        for (StarWorldClientNationOverlayState.Label label : snapshot.labels()) {
+            String name = label.displayName();
+            if (name == null || name.isEmpty()) {
+                continue;
+            }
+
+            int sx = (int) Math.round(mapLeft + (label.capitalX() - worldMinX) / (double) bpp);
+            int sy = (int) Math.round(mapTop + (label.capitalZ() - worldMinZ) / (double) bpp);
+            if (sx < mapLeft || sx >= mapRight || sy < mapTop || sy >= mapBottom) {
+                continue;
+            }
+
+            int w = font.width(name);
+            int x0 = sx - w / 2 - 2;
+            int y0 = sy - 5;
+            int x1 = x0 + w + 4;
+            int y1 = y0 + 10;
+            if (x1 < mapLeft || x0 >= mapRight || y1 < mapTop || y0 >= mapBottom) {
+                continue;
+            }
+            x0 = Math.max(x0, mapLeft);
+            y0 = Math.max(y0, mapTop);
+            x1 = Math.min(x1, mapRight);
+            y1 = Math.min(y1, mapBottom);
+            graphics.fill(x0, y0, x1, y1, 0x80000000);
+
+            int textColor = 0xFF000000 | (label.colorRgb() & 0xFFFFFF);
+            graphics.drawString(font, Component.literal(name), sx - w / 2, sy - 4, textColor);
+        }
     }
 
     @Override
@@ -179,6 +292,10 @@ public final class MapPage implements DebugPage {
             renderer.draw(graphics, mapLeft, mapTop);
         } else {
             graphics.fill(mapLeft, mapTop, mapRight, mapBottom, 0xAA000000);
+        }
+
+        if (shouldShowNationArea()) {
+            drawNationOverlay(graphics, bpp, renderCenterX, renderCenterZ);
         }
 
         int hoverWorldX;
@@ -504,6 +621,12 @@ public final class MapPage implements DebugPage {
         private long lastRevalidateGameTime;
         private int revalidateCursor;
 
+        private long lastNationRequestMs;
+        private int lastNationReqMinX;
+        private int lastNationReqMaxX;
+        private int lastNationReqMinZ;
+        private int lastNationReqMaxZ;
+
         private final ArrayDeque<Long> diskLoadQueue = new ArrayDeque<>();
         private final Set<Long> diskLoadQueued = new HashSet<>();
         private final Set<Long> diskWriteQueued = new HashSet<>();
@@ -591,6 +714,10 @@ public final class MapPage implements DebugPage {
             lastCMinZ = cMinZ;
             lastCMaxZ = cMaxZ;
 
+            if (shouldShowNationArea()) {
+                maybeRequestNationOverlay(level, cMinX, cMaxX, cMinZ, cMaxZ);
+            }
+
             for (int cz = cMinZ; cz <= cMaxZ; cz++) {
                 for (int cx = cMinX; cx <= cMaxX; cx++) {
                     visible++;
@@ -656,6 +783,31 @@ public final class MapPage implements DebugPage {
             lastBuildQueue = buildQueue.size();
             lastBlitQueue = regionUploadQueue.size();
             lastTileCache = TILE_CACHE.size();
+        }
+
+        private void maybeRequestNationOverlay(ClientLevel level, int cMinX, int cMaxX, int cMinZ, int cMaxZ) {
+            StarWorldClientNationOverlayState.Snapshot snap = StarWorldClientNationOverlayState.getSnapshot();
+            String dimId = level.dimension().location().toString();
+            if (snap != null && snap.covers(dimId, cMinX, cMaxX, cMinZ, cMaxZ)) {
+                return;
+            }
+
+            long now = Util.getMillis();
+            if (now - lastNationRequestMs < 200L) {
+                return;
+            }
+
+            if (cMinX == lastNationReqMinX && cMaxX == lastNationReqMaxX && cMinZ == lastNationReqMinZ && cMaxZ == lastNationReqMaxZ) {
+                return;
+            }
+
+            lastNationRequestMs = now;
+            lastNationReqMinX = cMinX;
+            lastNationReqMaxX = cMaxX;
+            lastNationReqMinZ = cMinZ;
+            lastNationReqMaxZ = cMaxZ;
+
+            StarWorldNetwork.CHANNEL.sendToServer(new RequestNationOverlayC2SPacket(dimId, cMinX, cMaxX, cMinZ, cMaxZ));
         }
 
         private void pump(long nanosBudget) {
