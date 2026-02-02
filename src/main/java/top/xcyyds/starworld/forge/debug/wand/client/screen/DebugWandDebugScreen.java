@@ -12,7 +12,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionHand;
 import top.xcyyds.starworld.forge.debug.wand.client.screen.page.ConsolePage;
 import top.xcyyds.starworld.forge.debug.wand.client.screen.page.DebugPage;
-import top.xcyyds.starworld.forge.debug.wand.client.screen.page.MapPage;
 import top.xcyyds.starworld.forge.debug.wand.client.screen.page.VisualOptionsPage;
 
 import java.util.List;
@@ -68,8 +67,7 @@ public class DebugWandDebugScreen extends Screen {
     protected void init() {
         pages = List.of(
                 new VisualOptionsPage(this, hand),
-                new ConsolePage(this),
-                new MapPage(this)
+                new ConsolePage(this)
         );
 
         navList = new NavList(minecraft, NAV_WIDTH, height, PADDING, height - PADDING, 22);

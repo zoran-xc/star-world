@@ -81,12 +81,14 @@ public final class RequestNationOverlayC2SPacket {
             List<Nation> nations = data.nations();
 
             int[][] grid = new int[(int) h][(int) w];
+            int[] nationIds = new int[(int) (w * h)];
             for (int dz = 0; dz < h; dz++) {
                 int cz = cMinZ + dz;
                 for (int dx = 0; dx < w; dx++) {
                     int cx = cMinX + dx;
                     int id = NationOverlayCache.getNationId(level, nations, cx, cz);
                     grid[dz][dx] = id;
+                    nationIds[dz * (int) w + dx] = id;
                 }
             }
 
@@ -123,7 +125,7 @@ public final class RequestNationOverlayC2SPacket {
                 labels.add(new NationOverlayS2CPacket.Label(n.id(), n.colorRgb(), n.zhName(), n.enName(), n.capitalX(), n.capitalZ()));
             }
 
-            NationOverlayS2CPacket s2c = new NationOverlayS2CPacket(msg.dimId, cMinX, cMaxX, cMinZ, cMaxZ, segments, labels);
+            NationOverlayS2CPacket s2c = new NationOverlayS2CPacket(msg.dimId, cMinX, cMaxX, cMinZ, cMaxZ, nationIds, segments, labels);
             StarWorldNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), s2c);
         });
         ctx.get().setPacketHandled(true);
